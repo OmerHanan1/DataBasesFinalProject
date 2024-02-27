@@ -75,10 +75,8 @@ class DBManager:
         # 5. Insure that using this function few times in a row will not insert duplicate items to
         # the collection.
         
-        # if self.game_collection.count > 0:
-        #     return
-        
         if self.game_collection.count_documents({}) > 0:
+            print ("Data already loaded")
             return
         
         # Load the CSV file "NintendoGames.csv"
@@ -91,7 +89,14 @@ class DBManager:
         df["is_rented"] = False
         
         # Insert all the records into games collection
-        self.game_collection.insert_many(df.to_dict("records"))
+        # Iterate over the rows of the dataframe and insert each row as a document to the collection
+        for index, row in df.iterrows():
+            if self.game_collection.find_one({"title": row["title"]}):
+                print(f"Game {row['title']} already exists in the collection")
+                continue
+            self.game_collection.insert_one(row.to_dict())
+        
+        # self.game_collection.insert_many(df.to_dict("records"))
         
         # Insure that using this function few times in a row will not insert duplicate items to the collection
         self.game_collection.create_index("title", unique=True)
